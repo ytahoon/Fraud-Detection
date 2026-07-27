@@ -1,0 +1,23 @@
+.env
+.env.*
+!.env.example
+.venv/
+__pycache__/
+*.pyc
+.DS_Store
+.ipynb_checkpoints/
+outputs/
+tmp/
+
+# Raw datasets are large and should not be committed to the public repository.
+data/raw/**/*
+!data/raw/**/
+!data/raw/**/.gitkeep
+
+# Generated dashboard exports can be very large; regenerate them from notebooks.
+artifacts/dashboard/*.csv
+!artifacts/dashboard/.gitkeep
+
+# Local Streamlit and Jupyter runtime files.
+.streamlit/secrets.toml
+.jupyter/

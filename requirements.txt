@@ -1,0 +1,13 @@
+pandas
+numpy
+scikit-learn
+xgboost
+lightgbm
+sqlalchemy
+pymysql
+joblib
+certifi
+streamlit
+plotly
+flask
+google-generativeai
