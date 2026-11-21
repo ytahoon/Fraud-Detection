@@ -1,0 +1,42 @@
+x-app: &app
+  build: .
+  image: fraud-detection-demo:local
+  network_mode: service:tidb
+  environment: &demo-env
+    DB_HOST: 127.0.0.1
+    DB_PORT: "4000"
+    DB_USER: root
+    DB_PASS: ""
+    DB_TLS: disable
+    TIDB_DEMO_DATABASE: fraud_detection_local_demo
+
+services:
+  tidb:
+    image: pingcap/tidb:v8.5.7
+    command: ["--store=unistore", "--path=/tmp/fraud-demo-tidb", "--host=127.0.0.1", "--report-status=false"]
+    ports:
+      - "127.0.0.1:${DASHBOARD_PORT:-8502}:8501"
+      - "127.0.0.1:${CHATBOT_PORT:-5002}:5000"
+
+  bootstrap:
+    <<: *app
+    depends_on: [tidb]
+    command: ["python", "-m", "src.demo_bootstrap"]
+
+  dashboard:
+    <<: *app
+    depends_on:
+      bootstrap:
+        condition: service_completed_successfully
+    command: ["python", "-m", "streamlit", "run", "src/dashboard/dashboard_app.py",
+              "--server.address=0.0.0.0", "--server.headless=true", "--browser.gatherUsageStats=false"]
+
+  chatbot:
+    <<: *app
+    depends_on:
+      bootstrap:
+        condition: service_completed_successfully
+    environment:
+      <<: *demo-env
+      CHATBOT_HOST: 0.0.0.0
+    command: ["python", "-m", "src.chatbot.chatbot_api"]

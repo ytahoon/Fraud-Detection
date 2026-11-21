@@ -1,0 +1,185 @@
+{
+  "dataset": "synthetic_financial",
+  "model_sha256": "b7506c0f517a78d8d6d46700a15e1c8f15c397e48df292f14f549949bff5e8c9",
+  "data_sha256": "16910f90577b0d981bf8ff289714510bb89bc71bff7d3f220f024e287e4eea6b",
+  "threshold": 0.919187605381012,
+  "windows": {
+    "train": {
+      "first_hour": 1,
+      "last_hour": 336,
+      "rows": 4784775,
+      "fraud_rows": 3767
+    },
+    "validation": {
+      "first_hour": 337,
+      "last_hour": 504,
+      "rows": 1279261,
+      "fraud_rows": 1854
+    },
+    "test": {
+      "first_hour": 505,
+      "last_hour": 743,
+      "rows": 298584,
+      "fraud_rows": 2592
+    }
+  },
+  "threshold_selection": {
+    "split": "validation",
+    "alerts_per_1000_target": 10,
+    "ordering": [
+      "highest recall",
+      "highest precision",
+      "highest threshold"
+    ],
+    "tie_policy": "equal scores receive the same decision; score >= threshold"
+  },
+  "validation": {
+    "rows": 1279261,
+    "fraud_rows": 1854,
+    "alerts": 12770,
+    "true_negatives": 1265297,
+    "false_alerts": 12110,
+    "missed_fraud": 1194,
+    "caught_fraud": 660,
+    "precision": 0.05168363351605325,
+    "recall": 0.3559870550161812,
+    "f1": 0.09026258205689278,
+    "alerts_per_1000": 9.982325733372626
+  },
+  "validation_budget_sensitivity": {
+    "5": {
+      "threshold": 0.9517014622688293,
+      "rows": 1279261,
+      "fraud_rows": 1854,
+      "alerts": 1849,
+      "true_negatives": 1275980,
+      "false_alerts": 1427,
+      "missed_fraud": 1432,
+      "caught_fraud": 422,
+      "precision": 0.2282314764737696,
+      "recall": 0.22761596548004315,
+      "f1": 0.22792330542803133,
+      "alerts_per_1000": 1.4453657228665613
+    },
+    "10": {
+      "threshold": 0.919187605381012,
+      "rows": 1279261,
+      "fraud_rows": 1854,
+      "alerts": 12770,
+      "true_negatives": 1265297,
+      "false_alerts": 12110,
+      "missed_fraud": 1194,
+      "caught_fraud": 660,
+      "precision": 0.05168363351605325,
+      "recall": 0.3559870550161812,
+      "f1": 0.09026258205689278,
+      "alerts_per_1000": 9.982325733372626
+    },
+    "20": {
+      "threshold": 0.8982470631599426,
+      "rows": 1279261,
+      "fraud_rows": 1854,
+      "alerts": 25272,
+      "true_negatives": 1252903,
+      "false_alerts": 24504,
+      "missed_fraud": 1086,
+      "caught_fraud": 768,
+      "precision": 0.030389363722697058,
+      "recall": 0.41423948220064727,
+      "f1": 0.05662464056624641,
+      "alerts_per_1000": 19.75515551556719
+    }
+  },
+  "test": {
+    "rows": 298584,
+    "fraud_rows": 2592,
+    "alerts": 3291,
+    "true_negatives": 293516,
+    "false_alerts": 2476,
+    "missed_fraud": 1777,
+    "caught_fraud": 815,
+    "precision": 0.24764509267699789,
+    "recall": 0.314429012345679,
+    "f1": 0.27706952235254123,
+    "alerts_per_1000": 11.022023953058437,
+    "average_precision": 0.2871578529940715,
+    "pr_auc_trapezoidal": 0.2968399381254222,
+    "roc_auc": 0.9154467595251574
+  },
+  "test_type_baseline_average_precision": 0.03356829944468506,
+  "test_no_skill_average_precision": 0.008680974198215577,
+  "test_by_transaction_type": {
+    "CASH_IN": {
+      "rows": 68121,
+      "fraud_rows": 0,
+      "alerts": 0,
+      "true_negatives": 68121,
+      "false_alerts": 0,
+      "missed_fraud": 0,
+      "caught_fraud": 0,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
+      "alerts_per_1000": 0.0
+    },
+    "CASH_OUT": {
+      "rows": 96019,
+      "fraud_rows": 1296,
+      "alerts": 632,
+      "true_negatives": 94610,
+      "false_alerts": 113,
+      "missed_fraud": 777,
+      "caught_fraud": 519,
+      "precision": 0.8212025316455697,
+      "recall": 0.40046296296296297,
+      "f1": 0.5383817427385892,
+      "alerts_per_1000": 6.582030639769212
+    },
+    "DEBIT": {
+      "rows": 2441,
+      "fraud_rows": 0,
+      "alerts": 0,
+      "true_negatives": 2441,
+      "false_alerts": 0,
+      "missed_fraud": 0,
+      "caught_fraud": 0,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
+      "alerts_per_1000": 0.0
+    },
+    "PAYMENT": {
+      "rows": 103976,
+      "fraud_rows": 0,
+      "alerts": 0,
+      "true_negatives": 103976,
+      "false_alerts": 0,
+      "missed_fraud": 0,
+      "caught_fraud": 0,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
+      "alerts_per_1000": 0.0
+    },
+    "TRANSFER": {
+      "rows": 28027,
+      "fraud_rows": 1296,
+      "alerts": 2659,
+      "true_negatives": 24368,
+      "false_alerts": 2363,
+      "missed_fraud": 1000,
+      "caught_fraud": 296,
+      "precision": 0.11132004512974802,
+      "recall": 0.22839506172839505,
+      "f1": 0.14968394437420987,
+      "alerts_per_1000": 94.87280122738788
+    }
+  },
+  "test_meets_validation_review_budget": false,
+  "production_eligible": false,
+  "production_limitations": [
+    "Later window is held out in the same simulation; no external or live validation.",
+    "At the frozen threshold most test fraud was not detected.",
+    "Scores are rankings, not calibrated probabilities or payment decisions."
+  ]
+}

@@ -18,6 +18,9 @@ data/raw/**/*
 artifacts/dashboard/*.csv
 !artifacts/dashboard/.gitkeep
 
+# Keep the IEEE-CIS competition-trained weights local.
+/artifacts/models/ieee_cis_pre_auth_v1_0/model.*
+
 # Local Streamlit and Jupyter runtime files.
 .streamlit/secrets.toml
 .jupyter/

@@ -1,0 +1,79 @@
+{
+  "schema_version": 1,
+  "dataset": "ieee_cis",
+  "algorithm": "lightgbm",
+  "model_version": "IEEE_CIS_Fixture_LightGBM_v1.0",
+  "status": "portfolio_demo",
+  "production_eligible": false,
+  "training_source": "fabricated amounts, product codes and labels; no competition data",
+  "training_seed": 42,
+  "training_environment": {
+    "lightgbm": "4.6.0",
+    "numpy": "2.1.3"
+  },
+  "model_sha256": "26a2b763ac820df170f093630ec6205c35ea9deb44993ee1d4575237c08d72bd",
+  "validation_sha256": "6042a220a587a28490bb03eca6bdab279b6e17b3d0bd6e17500875c7cee1a87d",
+  "preprocessing": {
+    "version": "ieee_cis_pre_auth_v1",
+    "entrypoint": "src.ieee_cis.prepare_ieee_features",
+    "source_sha256": "e5e6570e2f8bb19484d847813753c8377192f343c5efdba439cf557f391b186d",
+    "raw_inputs": [
+      "amount",
+      "type"
+    ],
+    "csv_mapping": {
+      "amount": "TransactionAmt",
+      "type": "ProductCD"
+    },
+    "product_codes": [
+      "C",
+      "H",
+      "R",
+      "S",
+      "W"
+    ],
+    "feature_order": [
+      "amount",
+      "amount_fraction_1e4",
+      "product_C",
+      "product_H",
+      "product_R",
+      "product_S",
+      "product_W"
+    ]
+  },
+  "decision": {
+    "threshold": 0.5,
+    "operator": ">=",
+    "positive_action": "review",
+    "negative_action": "no_alert",
+    "source": "demo",
+    "currency": "XTS"
+  },
+  "prediction_checks": [
+    {
+      "amount": 85.99,
+      "type": "w",
+      "risk_score": 0.001455409559002713,
+      "decision": "no_alert"
+    },
+    {
+      "amount": 149.5,
+      "type": "C",
+      "risk_score": 0.9333045867389183,
+      "decision": "review"
+    },
+    {
+      "amount": 45.0,
+      "type": "R",
+      "risk_score": 0.0030870382620850688,
+      "decision": "no_alert"
+    },
+    {
+      "amount": 520.0,
+      "type": "S",
+      "risk_score": 0.9774175862455502,
+      "decision": "review"
+    }
+  ]
+}

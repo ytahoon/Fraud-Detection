@@ -1,0 +1,12 @@
+**
+!requirements.txt
+!src/
+!src/**
+!tests/
+!tests/**
+!artifacts/
+!artifacts/models/
+!artifacts/models/**
+**/__pycache__/
+**/*.pyc
+artifacts/models/ieee_cis_pre_auth_v1_0/model.*

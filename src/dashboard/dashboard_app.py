@@ -1,6 +1,7 @@
 import json
 import os
 from pathlib import Path
+import sys
 
 import numpy as np
 import pandas as pd
@@ -8,12 +9,19 @@ import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
 from sklearn.metrics import auc, confusion_matrix, roc_curve
+from sqlalchemy.exc import SQLAlchemyError
 
 
 st.set_page_config(page_title="Fraud Detection Dashboard", layout="wide")
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
+from src.database.connection import load_demo_settings, open_engine
+from src.database.demo_queries import DATASETS, REJECTION_REASONS, SCORING_STATUSES, fetch_demo_transactions
+
 IEEE_DATA_DIR = Path(os.getenv("IEEE_CIS_DATA_DIR", PROJECT_ROOT / "data/raw/ieee_cis"))
 SYNTHETIC_DATA_FILE = Path(
     os.getenv("SYNTHETIC_FINANCIAL_DATA_FILE", PROJECT_ROOT / "data/raw/synthetic_financial/synthetic_financial.csv")
@@ -171,11 +179,11 @@ def render_stakeholder_note(page: str) -> None:
         "Fraud Monitoring": "Track fraud behavior over time and check how amount relates to fraud labels.",
         "Device Risk": "Identify device groups with higher observed fraud rates.",
         "Card / User Risk": "Highlight card groups with concentrated fraud behavior.",
-        "Alerts": "Review highest-risk transactions first, then drill down by risk level.",
+        "Validation Scores": "Offline IEEE-CIS validation predictions, separate from the TiDB demo.",
         "Model Performance": "Compare model quality using validation metrics and threshold behavior.",
         "Transaction Type Risk": "Compare fraud concentration across payment, transfer, and cash movement types.",
         "Amount / Balance Analysis": "Inspect how transaction amounts and balance movements differ by fraud class.",
-        "Synthetic XGBoost Results": "Review the final Synthetic Financial XGBoost validation results and model features.",
+        "Synthetic XGBoost Results": "Historical 12-feature benchmark. This is not the model used for TiDB demo scoring.",
     }
     st.info(notes.get(page, "This page provides decision support for fraud analysis."))
 
@@ -305,50 +313,21 @@ def page_ieee_card_user_risk(df: pd.DataFrame) -> None:
     st.plotly_chart(apply_plot_style(fig_dist), use_container_width=True)
 
 
-def _amount_risk_score(amount: pd.Series) -> pd.Series:
-    z = (amount - amount.median()) / (amount.std() + 1e-9)
-    z = z.clip(-3, 3)
-    return (z - z.min()) / (z.max() - z.min() + 1e-9)
-
-
-def page_ieee_alerts(df: pd.DataFrame, val_df: pd.DataFrame | None) -> None:
-    work = df.copy()
-
-    if val_df is not None and {"TransactionID", "risk_score"}.issubset(val_df.columns):
-        vf = val_df[["TransactionID", "risk_score"]].copy()
-        work = work.merge(vf, on="TransactionID", how="left")
-        if work["risk_score"].notna().sum() == 0 and len(vf) > 0:
-            vtid = pd.to_numeric(vf["TransactionID"], errors="coerce")
-            if vtid.notna().all() and vtid.max() < work["TransactionID"].min():
-                base = load_ieee_data().reset_index(drop=True)
-                pos = vtid.astype(int).clip(lower=0, upper=len(base) - 1)
-                vf = vf.copy()
-                vf["TransactionID"] = base.iloc[pos]["TransactionID"].values
-                work = df.copy()
-                work = work.merge(vf[["TransactionID", "risk_score"]], on="TransactionID", how="left")
-                st.warning("Prediction file used row indices; remapped using training row order.")
-        if work["risk_score"].isna().any():
-            m = work["risk_score"].isna()
-            work.loc[m, "risk_score"] = _amount_risk_score(work.loc[m, "TransactionAmt"])
-    else:
-        work["risk_score"] = _amount_risk_score(work["TransactionAmt"])
-
-    work["risk_level"] = pd.cut(work["risk_score"], bins=[-1, 0.33, 0.66, 2], labels=["Low", "Medium", "High"])
-    level = st.selectbox("Risk level", ["All", "High", "Medium", "Low"])
-    if level != "All":
-        work = work[work["risk_level"] == level]
-
-    st.subheader("Flagged Transactions")
-    cols = ["TransactionID", "TransactionAmt", "isFraud", "DeviceInfo", "card1", "card2", "risk_score", "risk_level"]
-    display_df = work[cols].sort_values("risk_score", ascending=False).head(1000)
+def page_ieee_validation_scores(val_df: pd.DataFrame | None) -> None:
+    columns = ["TransactionID", "risk_score", "y_pred", "y_true"]
+    if val_df is None or not set(columns).issubset(val_df.columns):
+        st.info("IEEE-CIS validation predictions are not available.")
+        return
     st.dataframe(
-        display_df,
+        val_df[columns].dropna(subset=["risk_score"]).nlargest(1000, "risk_score"),
         use_container_width=True,
         height=460,
         hide_index=True,
         column_config={
-            "TransactionAmt": st.column_config.NumberColumn("Transaction Amount", format="$%.2f"),
-            "risk_score": st.column_config.NumberColumn("Risk Score", format="%.3f"),
+            "TransactionID": "Transaction ID",
+            "risk_score": st.column_config.NumberColumn("Offline validation score", format="%.6f"),
+            "y_pred": "Model prediction",
+            "y_true": "Dataset label",
         },
     )
 
@@ -653,12 +632,76 @@ def page_synthetic_model_results() -> None:
         st.warning(f"Feature list not found at {SYNTHETIC_FEATURE_FILE}")
 
 
+@st.cache_resource
+def tidb_demo_engine(settings):
+    return open_engine(settings)
+
+
+def page_tidb_demo(dataset: str) -> None:
+    st.subheader("TiDB Transaction Scores")
+    id_column, status_column, action_column = st.columns([2, 2, 1], vertical_alignment="bottom")
+    with id_column:
+        transaction_id = st.text_input("Transaction ID", placeholder="DEMO-001", max_chars=64).strip()
+    with status_column:
+        selected = st.selectbox(
+            "Scoring status", [None, *SCORING_STATUSES],
+            format_func=lambda value: SCORING_STATUSES[value] if value else "All statuses",
+        )
+    with action_column:
+        st.button("Refresh")
+
+    try:
+        rows = fetch_demo_transactions(
+            tidb_demo_engine(load_demo_settings()), dataset, transaction_id=transaction_id or None, status=selected,
+        )
+    except (ValueError, SQLAlchemyError):
+        st.error("TiDB demo unavailable. Check the connection settings and demo migrations.")
+        return
+    if not rows:
+        st.info("No transactions match the current filters.")
+        return
+
+    frame = pd.DataFrame(rows)
+    frame["scoring_status"] = frame["scoring_status"].map(SCORING_STATUSES)
+    frame["amount"] = pd.to_numeric(frame["amount"])
+    for column in ("risk_score", "threshold"):
+        frame[column] = pd.to_numeric(frame[column])
+    frame["fraud_label"] = frame["fraud_label"].map({"fraud": "Fraud", "not_fraud": "Not fraud"}).fillna("Unlabeled")
+    frame["rejection_reason"] = frame["rejection_reason"].map(REJECTION_REASONS)
+
+    columns = ["transaction_id", "scoring_status", "risk_score", "threshold", "model_version", "fraud_label",
+               "amount", "currency", "transaction_type", "occurred_at"]
+    if frame["rejection_reason"].notna().any():
+        columns.insert(2, "rejection_reason")
+    if len(frame) == 100:
+        st.caption("Showing the first 100 matching transactions.")
+    st.dataframe(
+        frame[columns],
+        hide_index=True,
+        column_config={
+            "transaction_id": "Transaction ID", "occurred_at": "Occurred at (UTC)",
+            "transaction_type": "Product code" if dataset == "ieee_cis" else "Transaction type",
+            "currency": "Currency",
+            "amount": st.column_config.NumberColumn("Amount", format="%.4f"),
+            "risk_score": st.column_config.NumberColumn("Stored score", format="%.6f"),
+            "threshold": st.column_config.NumberColumn("Threshold", format="%.6f"),
+            "model_version": "Current model version", "scoring_status": "Scoring status",
+            "fraud_label": "Demo fraud label", "rejection_reason": "Input issue",
+        },
+    )
+
+
 def render_ieee_dashboard(page: str) -> None:
-    if not IEEE_DATA_DIR.exists():
-        st.error(f"Data folder not found. Expected IEEE-CIS files at: {IEEE_DATA_DIR}")
+    if page == "Validation Scores":
+        page_ieee_validation_scores(load_ieee_validation_artifacts())
+        return
+    if page == "Model Performance":
+        page_ieee_model_performance(load_ieee_validation_artifacts())
+        return
+    if not all((IEEE_DATA_DIR / name).is_file() for name in ("train_transaction.csv", "train_identity.csv")):
+        st.info(f"IEEE-CIS training CSVs were not found in {IEEE_DATA_DIR}.")
         return
     df = load_ieee_data()
-    val_df = load_ieee_validation_artifacts()
     filtered_df = add_amount_filter(df, "TransactionAmt")
 
     if page == "Overview":
@@ -669,10 +712,6 @@ def render_ieee_dashboard(page: str) -> None:
         page_ieee_device_risk(filtered_df)
     elif page == "Card / User Risk":
         page_ieee_card_user_risk(filtered_df)
-    elif page == "Alerts":
-        page_ieee_alerts(filtered_df, val_df)
-    elif page == "Model Performance":
-        page_ieee_model_performance(val_df)
 
 
 def render_synthetic_dashboard(page: str) -> None:
@@ -701,24 +740,20 @@ def main() -> None:
         unsafe_allow_html=True,
     )
 
-    dataset = st.sidebar.selectbox("Dataset", ["IEEE-CIS", "Synthetic Financial"])
-    if dataset == "IEEE-CIS":
-        pages = ["Overview", "Fraud Monitoring", "Device Risk", "Card / User Risk", "Alerts", "Model Performance"]
+    view = st.sidebar.radio("View", ["TiDB Demo", "Historical Analytics"])
+    dataset = st.sidebar.selectbox("Dataset", list(DATASETS), format_func=DATASETS.__getitem__)
+    if view == "TiDB Demo":
+        page_tidb_demo(dataset)
+        return
+
+    if dataset == "ieee_cis":
+        pages = ["Overview", "Fraud Monitoring", "Device Risk", "Card / User Risk", "Validation Scores", "Model Performance"]
     else:
         pages = ["Overview", "Transaction Type Risk", "Amount / Balance Analysis", "Synthetic XGBoost Results"]
-
-    page = st.sidebar.radio("Pages", pages)
-
-    with st.sidebar.expander("Dashboard guide", expanded=False):
-        st.markdown(
-            "- Choose a dataset first.\n"
-            "- Apply filters before reading the charts.\n"
-            "- Use model pages to compare detection quality and alert thresholds."
-        )
-
+    page = st.sidebar.radio("Page", pages)
     render_stakeholder_note(page)
 
-    if dataset == "IEEE-CIS":
+    if dataset == "ieee_cis":
         render_ieee_dashboard(page)
     else:
         render_synthetic_dashboard(page)

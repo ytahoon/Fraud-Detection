@@ -1,0 +1,33 @@
+name: Fraud Detection Tests
+
+on: [push, pull_request]
+
+permissions:
+  contents: read
+
+jobs:
+  workflow:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - name: Start the public demo
+        run: docker compose up --build -d
+      - name: Check live dashboard and chatbot
+        run: |
+          curl --fail --retry 20 --retry-connrefused --retry-delay 1 --max-time 10 http://127.0.0.1:8502/_stcore/health
+          curl --fail --retry 20 --retry-connrefused --retry-delay 1 --max-time 10 http://127.0.0.1:5002/transactions/ieee_cis/DEMO-001
+          curl --fail --max-time 10 http://127.0.0.1:5002/transactions/synthetic_financial/DEMO-001
+      - name: Unit and end-to-end tests
+        run: >
+          docker compose run --rm --no-deps
+          -e RUN_TIDB_INTEGRATION=1 -e TIDB_DEMO_DATABASE=fraud_detection_ci_demo
+          bootstrap python -m unittest discover -s tests -v
+      - name: Logs on failure
+        if: failure()
+        run: docker compose logs
+      - name: Stop the demo
+        if: always()
+        run: docker compose down

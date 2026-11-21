@@ -1,0 +1,162 @@
+{
+  "dataset": "ieee_cis",
+  "algorithm": "lightgbm",
+  "model_sha256": "598328f7f91e74265dc0ecb81e1829b1cf47037c14a77faff6ee1cd7e11335ff",
+  "data_sha256": "3a5c83ab6b3cc13dcabe5ffa9f522307fd5f7f7b6e6f6a60c32284ca6283d642",
+  "windows": {
+    "train": {
+      "first_relative_second": 86400,
+      "last_relative_second": 10367979,
+      "rows": 410601,
+      "fraud_rows": 14419
+    },
+    "validation": {
+      "first_relative_second": 10368012,
+      "last_relative_second": 12959976,
+      "rows": 85303,
+      "fraud_rows": 2962
+    },
+    "test": {
+      "first_relative_second": 12960000,
+      "last_relative_second": 15811131,
+      "rows": 94636,
+      "fraud_rows": 3282
+    }
+  },
+  "split_edges_relative_seconds": [
+    10368000,
+    12960000
+  ],
+  "selection_metric": "validation average precision",
+  "validation_model_comparison": {
+    "xgboost": {
+      "average_precision": 0.10351929730434191,
+      "pr_auc_trapezoidal": 0.10342247176512921,
+      "roc_auc": 0.7412524841422736
+    },
+    "lightgbm": {
+      "average_precision": 0.11155069671439027,
+      "pr_auc_trapezoidal": 0.110886846284181,
+      "roc_auc": 0.7472418657935072
+    }
+  },
+  "threshold_selection": {
+    "split": "validation",
+    "max_alerts_per_1000": 50,
+    "ordering": [
+      "highest recall",
+      "highest precision",
+      "highest threshold"
+    ]
+  },
+  "threshold": 0.7485324290515689,
+  "validation": {
+    "rows": 85303,
+    "fraud_rows": 2962,
+    "alerts": 4234,
+    "true_negatives": 78705,
+    "false_alerts": 3636,
+    "missed_fraud": 2364,
+    "caught_fraud": 598,
+    "precision": 0.14123760037789324,
+    "recall": 0.20189061444969614,
+    "f1": 0.16620344635908837,
+    "alerts_per_1000": 49.63483113137873,
+    "average_precision": 0.11155069671439027,
+    "pr_auc_trapezoidal": 0.110886846284181,
+    "roc_auc": 0.7472418657935072
+  },
+  "test": {
+    "rows": 94636,
+    "fraud_rows": 3282,
+    "alerts": 4904,
+    "true_negatives": 87212,
+    "false_alerts": 4142,
+    "missed_fraud": 2520,
+    "caught_fraud": 762,
+    "precision": 0.15538336052202284,
+    "recall": 0.23217550274223034,
+    "f1": 0.18617151233813828,
+    "alerts_per_1000": 51.81960353353903,
+    "average_precision": 0.11520392778451242,
+    "pr_auc_trapezoidal": 0.11626081617837367,
+    "roc_auc": 0.7636532477331989
+  },
+  "test_by_product": {
+    "C": {
+      "rows": 9980,
+      "fraud_rows": 1347,
+      "alerts": 3691,
+      "true_negatives": 5477,
+      "false_alerts": 3156,
+      "missed_fraud": 812,
+      "caught_fraud": 535,
+      "precision": 0.1449471687889461,
+      "recall": 0.39717891610987377,
+      "f1": 0.21238586740770146,
+      "alerts_per_1000": 369.83967935871743
+    },
+    "H": {
+      "rows": 2706,
+      "fraud_rows": 170,
+      "alerts": 422,
+      "true_negatives": 2190,
+      "false_alerts": 346,
+      "missed_fraud": 94,
+      "caught_fraud": 76,
+      "precision": 0.18009478672985782,
+      "recall": 0.4470588235294118,
+      "f1": 0.25675675675675674,
+      "alerts_per_1000": 155.94974131559496
+    },
+    "R": {
+      "rows": 4417,
+      "fraud_rows": 221,
+      "alerts": 131,
+      "true_negatives": 4109,
+      "false_alerts": 87,
+      "missed_fraud": 177,
+      "caught_fraud": 44,
+      "precision": 0.33587786259541985,
+      "recall": 0.19909502262443438,
+      "f1": 0.25,
+      "alerts_per_1000": 29.658139008376725
+    },
+    "S": {
+      "rows": 3110,
+      "fraud_rows": 167,
+      "alerts": 293,
+      "true_negatives": 2676,
+      "false_alerts": 267,
+      "missed_fraud": 141,
+      "caught_fraud": 26,
+      "precision": 0.08873720136518772,
+      "recall": 0.15568862275449102,
+      "f1": 0.11304347826086956,
+      "alerts_per_1000": 94.21221864951768
+    },
+    "W": {
+      "rows": 74423,
+      "fraud_rows": 1377,
+      "alerts": 367,
+      "true_negatives": 72760,
+      "false_alerts": 286,
+      "missed_fraud": 1296,
+      "caught_fraud": 81,
+      "precision": 0.22070844686648503,
+      "recall": 0.058823529411764705,
+      "f1": 0.09288990825688073,
+      "alerts_per_1000": 4.931271246791987
+    }
+  },
+  "baselines": {
+    "test_no_skill_average_precision": 0.03468024853121434,
+    "test_product_only_average_precision": 0.08769852812829583
+  },
+  "production_eligible": false,
+  "limitations": [
+    "Internal chronological holdout from the labeled competition training file, not a Kaggle leaderboard result.",
+    "Product codes require a documented source mapping. Test currency and fixtures are fabricated.",
+    "Scores are not calibrated probabilities. No real payment decisions are supported."
+  ]
+}

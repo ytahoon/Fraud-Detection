@@ -1,0 +1,9 @@
+{
+  "dataset": "ieee_cis",
+  "algorithm": "lightgbm",
+  "model_sha256": "26a2b763ac820df170f093630ec6205c35ea9deb44993ee1d4575237c08d72bd",
+  "threshold": 0.5,
+  "production_eligible": false,
+  "source": "project_generated_demo_rows",
+  "checks": "Native-model reload and fabricated input prediction parity only. No research metrics."
+}

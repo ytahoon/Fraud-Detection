@@ -1,0 +1,4 @@
+CREATE TABLE IF NOT EXISTS datasets (
+    dataset VARCHAR(32) NOT NULL PRIMARY KEY,
+    display_name VARCHAR(80) NOT NULL
+) DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin

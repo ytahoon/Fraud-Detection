@@ -1,0 +1,2 @@
+# Optional general chat only; transaction lookups do not use this dependency.
+google-genai==1.56.0

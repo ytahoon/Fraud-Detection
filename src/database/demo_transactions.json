@@ -1,0 +1,14 @@
+[
+  {"dataset":"synthetic_financial","transaction_id":"DEMO-001","occurred_at":"2026-01-01T09:00:00","amount":"2500.00","currency":"XTS","transaction_type":"TRANSFER","fraud_label":"fraud"},
+  {"dataset":"synthetic_financial","transaction_id":"DEMO-002","occurred_at":"2026-01-01T09:01:00","amount":"125.00","currency":"XTS","transaction_type":"PAYMENT","fraud_label":"not_fraud"},
+  {"dataset":"synthetic_financial","transaction_id":"DEMO-003","occurred_at":"2026-01-01T09:02:00","amount":"1000000.00","currency":"XTS","transaction_type":"CASH_OUT","fraud_label":"fraud"},
+  {"dataset":"synthetic_financial","transaction_id":"DEMO-004","occurred_at":"2026-01-01T09:03:00","amount":"0.00","currency":"XTS","transaction_type":"CASH_OUT","fraud_label":"fraud"},
+  {"dataset":"synthetic_financial","transaction_id":"DEMO-005","occurred_at":"2026-01-01T09:04:00","amount":"6500000.00","currency":"XTS","transaction_type":"TRANSFER","fraud_label":"not_fraud"},
+  {"dataset":"synthetic_financial","transaction_id":"DEMO-006","occurred_at":"2026-01-01T09:05:00","amount":"750000.00","currency":"XTS","transaction_type":"TRANSFER","fraud_label":null},
+  {"dataset":"synthetic_financial","transaction_id":"DEMO-007","occurred_at":"2026-01-01T09:06:00","amount":"800.00","currency":"XTS","transaction_type":"CASH_IN","fraud_label":"not_fraud"},
+  {"dataset":"synthetic_financial","transaction_id":"DEMO-008","occurred_at":"2026-01-01T09:07:00","amount":"300.00","currency":"XTS","transaction_type":"DEBIT","fraud_label":"not_fraud"},
+  {"dataset":"ieee_cis","transaction_id":"DEMO-001","occurred_at":"2026-01-01T09:00:00","amount":"85.99","currency":"XTS","transaction_type":"W","fraud_label":"not_fraud"},
+  {"dataset":"ieee_cis","transaction_id":"DEMO-002","occurred_at":"2026-01-01T09:01:00","amount":"149.50","currency":"XTS","transaction_type":"C","fraud_label":"fraud"},
+  {"dataset":"ieee_cis","transaction_id":"DEMO-003","occurred_at":"2026-01-01T09:02:00","amount":"45.00","currency":"XTS","transaction_type":"R","fraud_label":"not_fraud"},
+  {"dataset":"ieee_cis","transaction_id":"DEMO-004","occurred_at":"2026-01-01T09:03:00","amount":"520.00","currency":"XTS","transaction_type":"S","fraud_label":null}
+]

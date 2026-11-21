@@ -1,169 +1,66 @@
-# Fraud Detection and Risk Intelligence System
+# Fraud Detection and Risk Intelligence
 
-This project builds a fraud detection workflow using two datasets only:
+[![Fraud Detection Tests](https://github.com/ytahoon/Fraud-Detection/actions/workflows/test.yml/badge.svg)](https://github.com/ytahoon/Fraud-Detection/actions/workflows/test.yml)
 
-- IEEE-CIS Fraud Detection
-- Synthetic Financial Dataset
+A portfolio project that compares fraud models on **IEEE-CIS** and **Synthetic Financial (PaySim)** and turns predictions into a review workflow. A Python scorer writes versioned results to TiDB. The Streamlit dashboard and Flask chatbot read the same stored result.
 
-No other dataset is part of the cleaned project scope.
+## Run the demo
 
-## Project Flow
-
-1. Explore and model the two fraud datasets.
-2. Evaluate models using fraud-focused metrics such as precision, recall, F1, ROC-AUC, and PR-AUC.
-3. Use the best model outputs for scoring and analyst review.
-4. Connect scoring results to TiDB through the database scoring script.
-5. Expose a chatbot API for analyst support and transaction lookup.
-6. Use the Streamlit dashboard to inspect fraud patterns, alerts, and model behavior.
-
-## Clean Folder Structure
-
-```text
-data/
-  raw/
-    ieee_cis/
-    synthetic_financial/
-
-notebooks/
-  01_ieee_cis_xgboost_modeling.ipynb
-  02_ieee_cis_model_comparison_thresholds.ipynb
-  03_synthetic_financial_eda_cleaning.ipynb
-  04_synthetic_financial_xgboost_modeling.ipynb
-
-src/
-  database/tidb_scoring.py
-  dashboard/dashboard_app.py
-  chatbot/chatbot_api.py
-
-artifacts/
-  dashboard/
-  models/
-
-reports/
-  presentation/
-```
-
-## Data
-
-IEEE-CIS raw files are stored in:
-
-```text
-data/raw/ieee_cis/
-```
-
-Expected files:
-
-- `train_transaction.csv`
-- `train_identity.csv`
-- `test_transaction.csv`
-- `test_identity.csv`
-- `sample_submission.csv`
-
-Synthetic Financial data should be placed at:
-
-```text
-data/raw/synthetic_financial/synthetic_financial.csv
-```
-
-The Synthetic Financial notebooks also include a fallback for the older `cleaned_data.csv` name, but `synthetic_financial.csv` is the project-standard filename.
-
-## Notebooks
-
-Run notebooks in order:
-
-1. `notebooks/01_ieee_cis_xgboost_modeling.ipynb`
-2. `notebooks/02_ieee_cis_model_comparison_thresholds.ipynb`
-3. `notebooks/03_synthetic_financial_eda_cleaning.ipynb`
-4. `notebooks/04_synthetic_financial_xgboost_modeling.ipynb`
-
-The IEEE model comparison notebook expects a prepared feature artifact at:
-
-```text
-artifacts/dashboard/cleaned_ieee_features.csv
-```
-
-If that file is missing, export the cleaned IEEE feature matrix before running the comparison notebook.
-
-## Dashboard
-
-Run the dashboard from the project root:
+Start Docker with Compose, then run:
 
 ```bash
-streamlit run src/dashboard/dashboard_app.py
+git clone https://github.com/ytahoon/Fraud-Detection.git
+cd Fraud-Detection
+docker compose up --build -d
 ```
 
-The dashboard reads:
+No Kaggle data, cloud credentials, or Gemini key is required. The stack loads **12 fabricated transactions**, scores both datasets, and binds only to localhost.
 
-- IEEE-CIS data from `data/raw/ieee_cis/`
-- Synthetic Financial data from `data/raw/synthetic_financial/synthetic_financial.csv`
-- validation predictions from `artifacts/dashboard/ieee_cis_val_predictions.csv`
-- Synthetic Financial model metadata from `artifacts/models/synthetic_financial_xgboost_features.json`
-
-Use the sidebar dataset selector to switch between IEEE-CIS views and Synthetic Financial views.
-
-## TiDB Scoring
-
-The TiDB scorer is:
-
-```text
-src/database/tidb_scoring.py
-```
-
-It loads a trained model, streams new transactions from TiDB, predicts fraud probability, and upserts results into `fraud_alerts`.
-
-Run example:
+- **Dashboard:** [http://127.0.0.1:8502](http://127.0.0.1:8502). Switch datasets and find `DEMO-001`; the transaction ID is reused intentionally to demonstrate dataset isolation.
+- **Chatbot API:** [IEEE-CIS lookup](http://127.0.0.1:5002/transactions/ieee_cis/DEMO-001) or [PaySim lookup](http://127.0.0.1:5002/transactions/synthetic_financial/DEMO-001). Compare the score, threshold, and model version with the dashboard.
 
 ```bash
-python src/database/tidb_scoring.py --model-path artifacts/models/ieee_cis_xgboost.json
+curl -X POST http://127.0.0.1:5002/chat -H "Content-Type: application/json" \
+  -d '{"message":"Check DEMO-001 in Synthetic Financial"}'
 ```
 
-Synthetic Financial scoring example:
+Stop the disposable stack with `docker compose down`. If the ports are busy, set
+`DASHBOARD_PORT` and `CHATBOT_PORT` when starting it. See [setup and troubleshooting](docs/SETUP.md).
+
+## Architecture
+
+```mermaid
+flowchart LR
+    fixtures["Fabricated transactions"] --> database[("TiDB")]
+    packages["Verified model packages"] --> scorer["Python batch scorer"]
+    database -->|"Amount + type or product code"| scorer
+    scorer -->|"Score, threshold, model version or quarantine"| database
+    database --> read["Shared read query"]
+    read --> dashboard["Streamlit dashboard"]
+    read --> chatbot["Flask chatbot"]
+```
+
+Transactions are keyed by dataset and transaction ID. Each model version can score a transaction once. Failed input checks go to quarantine rather than getting a made-up score. Fraud labels are stored separately from review recommendations.
+
+## Verified research results
+
+| Dataset | Selected model | Holdout rows | Average precision | Fraud precision | Fraud recall |
+| --- | --- | ---: | ---: | ---: | ---: |
+| IEEE-CIS | LightGBM | 94,636 | 0.1152 | 15.54% | 23.22% |
+| Synthetic Financial (PaySim) | XGBoost | 298,584 | 0.2872 | 24.76% | 31.44% |
+
+These are chronological holdout results, not live performance. The public quickstart uses a **separate IEEE-CIS fixture model** trained on fabricated data; its scores do not represent the IEEE-CIS research result. The PaySim quickstart uses the verified XGBoost package. Neither model is intended to approve or block payments.
+
+- [Research methods, baselines, and data sources](docs/RESEARCH.md)
+- [IEEE-CIS validation report](artifacts/models/ieee_cis_pre_auth_v1_0/validation.json) and [PaySim validation report](artifacts/models/synthetic_financial_pre_auth_v1_1/validation.json)
+- [Notebooks](notebooks/) and [public demo fixtures](src/database/demo_transactions.json)
+
+## Tests
+
+The [GitHub Actions workflow](.github/workflows/test.yml) starts this same stack and runs tests against a separate database inside its TiDB container. It checks model packaging, both datasets, idempotent scoring, quarantine recovery, and score parity across TiDB, the dashboard, and the chatbot.
 
 ```bash
-python src/database/tidb_scoring.py \
-  --dataset synthetic_financial \
-  --model-path artifacts/models/synthetic_financial_xgboost.pkl \
-  --feature-list-path artifacts/models/synthetic_financial_xgboost_features.json \
-  --threshold 0.971 \
-  --model-version Synthetic_XGBoost_v1.0
-```
-
-Required database environment variables:
-
-- `DB_USER`
-- `DB_PASS`
-- `DB_HOST`
-- `DB_NAME`
-- `DB_PORT` default: `4000`
-
-## Chatbot API
-
-The chatbot API is:
-
-```text
-src/chatbot/chatbot_api.py
-```
-
-Run it from the project root:
-
-```bash
-python src/chatbot/chatbot_api.py
-```
-
-Useful environment variables:
-
-- `MODEL_PATH`
-- `DATA_SOURCE`
-- `GEMINI_API_KEY`
-- `GEMINI_MODEL`
-- `PORT`
-
-The API works without a Gemini key for transaction lookup and fallback responses. Add `GEMINI_API_KEY` to enable general LLM answers.
-
-## Setup
-
-```bash
-python -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
+docker compose run --rm --no-deps \
+  -e RUN_TIDB_INTEGRATION=1 -e TIDB_DEMO_DATABASE=fraud_detection_ci_demo \
+  bootstrap python -m unittest discover -s tests -v
 ```
