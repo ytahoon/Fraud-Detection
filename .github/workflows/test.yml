@@ -17,9 +17,10 @@ jobs:
         run: docker compose up --build -d
       - name: Check live dashboard and chatbot
         run: |
-          curl --fail --retry 20 --retry-connrefused --retry-delay 1 --max-time 10 http://127.0.0.1:8502/_stcore/health
-          curl --fail --retry 20 --retry-connrefused --retry-delay 1 --max-time 10 http://127.0.0.1:5002/transactions/ieee_cis/DEMO-001
-          curl --fail --max-time 10 http://127.0.0.1:5002/transactions/synthetic_financial/DEMO-001
+          retry=(--fail --silent --show-error --retry 20 --retry-all-errors --retry-delay 1 --max-time 10)
+          curl "${retry[@]}" http://127.0.0.1:8502/_stcore/health
+          curl "${retry[@]}" http://127.0.0.1:5002/transactions/ieee_cis/DEMO-001
+          curl "${retry[@]}" http://127.0.0.1:5002/transactions/synthetic_financial/DEMO-001
       - name: Unit and end-to-end tests
         run: >
           docker compose run --rm --no-deps
