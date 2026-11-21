@@ -17,7 +17,9 @@ docker compose up --build -d
 No Kaggle data, cloud credentials, or Gemini key is required. The stack loads **12 fabricated transactions**, scores both datasets, and binds only to localhost.
 
 - **Dashboard:** [http://127.0.0.1:8502](http://127.0.0.1:8502). Switch datasets and find `DEMO-001`; the transaction ID is reused intentionally to demonstrate dataset isolation.
-- **Chatbot API:** [IEEE-CIS lookup](http://127.0.0.1:5002/transactions/ieee_cis/DEMO-001) or [PaySim lookup](http://127.0.0.1:5002/transactions/synthetic_financial/DEMO-001). Compare the score, threshold, and model version with the dashboard.
+- **Research Analytics:** In the dashboard sidebar, choose either dataset to explore class balance, time trends, segment risk, amount distributions, and chronological evaluation results. This view works without CSVs or TiDB.
+- **Chatbot:** [Open the transaction assistant](http://127.0.0.1:5002/chat), choose a dataset, and try `DEMO-001`. The browser and API use the same stored scores as the dashboard.
+- **Chatbot API:** [IEEE-CIS lookup](http://127.0.0.1:5002/transactions/ieee_cis/DEMO-001) or [PaySim lookup](http://127.0.0.1:5002/transactions/synthetic_financial/DEMO-001).
 
 ```bash
 curl -X POST http://127.0.0.1:5002/chat -H "Content-Type: application/json" \

@@ -7,6 +7,7 @@ From a clone of the repository, run `docker compose up --build -d`. The stack st
 | Component | Default address |
 | --- | --- |
 | Dashboard | `http://127.0.0.1:8502` |
+| Chatbot interface | `http://127.0.0.1:5002/chat` |
 | Chatbot API | `http://127.0.0.1:5002` |
 
 If the ports are occupied, use `DASHBOARD_PORT=8510 CHATBOT_PORT=5010 docker compose up --build -d` in a POSIX shell. If startup stalls, run `docker compose ps -a` and `docker compose logs bootstrap tidb`. `docker compose down` removes the local demo containers; it does not touch your research files or TiDB Cloud.
@@ -41,7 +42,19 @@ python -m src.database.tidb_admin check
 
 Omit `--create-database` when an administrator has already created an empty database. The migration runner refuses an unmanaged schema. The scorer rechecks invalid rows after their inputs change and never overwrites an existing score. Use separate read-only database credentials for shared dashboard and chatbot instances. These development servers are not intended for public hosting.
 
-Run `streamlit run src/dashboard/dashboard_app.py` and `python -m src.chatbot.chatbot_api` in separate shells. Historical Analytics uses local CSVs and validation exports only; it is not needed for the TiDB view. The chatbot works without Gemini. Optional general chat requires `python -m pip install -r requirements-gemini.txt` plus `GEMINI_API_KEY`, `GEMINI_MODEL`, and a request with `"mode": "general"`. Transaction lookup never sends scores or records to Gemini.
+Run `streamlit run src/dashboard/dashboard_app.py` and `python -m src.chatbot.chatbot_api` in separate shells. The chatbot works without Gemini. Optional general chat requires `python -m pip install -r requirements-gemini.txt` plus `GEMINI_API_KEY`, `GEMINI_MODEL`, and a request with `"mode": "general"`. Transaction lookup never sends scores or records to Gemini.
+
+## Research dashboard data
+
+Research Analytics uses aggregate JSON snapshots and verified evaluation reports included in the image. It does not load transaction-level research CSVs or private IEEE-CIS weights inside Docker. Confusion matrices are exact counts from the evaluation reports. ROC and precision–recall plots display up to 450 points from actual predictions per curve; rankings are computed before plot sampling. Dataset analytics cover the entire labeled source, while model metrics are scoped to the selected validation or test window.
+
+To regenerate the snapshots locally, keep the original PaySim CSV, IEEE-CIS transactions and identity CSVs, and private IEEE-CIS release model available and run:
+
+```bash
+python -m src.dashboard.export_dashboard
+```
+
+The export checks transaction CSV checksums and replays the release metrics. It writes only aggregate counts, statistics, and ranking curve points. Run `docker compose up --build -d` after refreshing the snapshots.
 
 ## Verify
 

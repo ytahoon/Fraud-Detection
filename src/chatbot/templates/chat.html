@@ -1,0 +1,78 @@
+{% set icons = url_for('static', filename='chat-icons.svg') %}
+{% macro icon(name, class_name='icon') -%}
+<svg class="{{ class_name }}" aria-hidden="true"><use href="{{ icons }}#{{ name }}"></use></svg>
+{%- endmacro %}
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>Transaction Assistant | Fraud Detection</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='chat.css') }}">
+  <script src="{{ url_for('static', filename='chat.js') }}" defer></script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div class="brand"><span class="brand-symbol">{{ icon('shield-check') }}</span>Fraud Detection</div>
+      <span class="environment">{{ icon('database') }} TiDB demo</span>
+    </div>
+  </header>
+  <main class="workspace">
+    <aside class="context" aria-label="Lookup settings">
+      <fieldset class="datasets">
+        <legend>Dataset</legend>
+        <div class="dataset-options">
+          {% for key, label in datasets.items() %}
+          <label class="dataset-option">
+            <input type="radio" name="dataset" value="{{ key }}" data-label="{{ label }}" {% if loop.first %}checked{% endif %}>
+            <span>{{ label }}{% if key == 'synthetic_financial' %}<small>PaySim</small>{% endif %}</span>
+          </label>
+          {% endfor %}
+        </div>
+      </fieldset>
+      <section class="samples" aria-labelledby="samples-title">
+        <h2 id="samples-title">Sample lookups</h2>
+        <div class="sample-options">
+          {% for id in ('DEMO-001', 'DEMO-002') %}
+          <button type="button" class="sample" data-transaction="{{ id }}" title="Look up {{ id }}">
+            {{ icon('message-square') }} <span>{{ id }}</span> {{ icon('arrow-up-right', 'icon sample-arrow') }}
+          </button>
+          {% endfor %}
+        </div>
+      </section>
+    </aside>
+    <section class="chat" aria-labelledby="chat-title">
+      <header class="chat-header">
+        <div>
+          <p class="eyebrow">Fraud operations</p>
+          <h1 id="chat-title">Transaction assistant</h1>
+        </div>
+        <button type="button" class="new-chat" id="new-chat">{{ icon('plus') }} <span>New chat</span></button>
+      </header>
+      <div class="thread" id="thread" role="log" aria-label="Conversation" tabindex="0">
+        <div class="message assistant">
+          <span class="avatar">{{ icon('shield-check') }}</span>
+          <div class="message-content">
+            <p class="speaker">Assistant</p>
+            <div class="message-body greeting">
+              <p>Which transaction would you like to review?</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <form class="composer" id="composer" method="post" action="{{ url_for('chat') }}">
+        <label class="sr-only" for="message">Transaction question</label>
+        <div class="input-row">
+          <input id="message" name="message" type="text" maxlength="2000" placeholder="Ask about a transaction&hellip;"
+                 autocomplete="off" spellcheck="false" required>
+          <button type="submit" class="send" id="send" aria-label="Send message" title="Send message" disabled>{{ icon('send') }}</button>
+        </div>
+        <p class="scope">Demo transactions only <span aria-hidden="true">&middot;</span> Scores are not payment decisions</p>
+      </form>
+    </section>
+  </main>
+  <template id="assistant-icon"><span class="avatar">{{ icon('shield-check') }}</span></template>
+</body>
+</html>

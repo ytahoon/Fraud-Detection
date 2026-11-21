@@ -7,7 +7,7 @@ from pathlib import Path
 import re
 import sys
 
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, make_response, render_template, request, url_for
 from sqlalchemy.exc import SQLAlchemyError
 
 
@@ -52,9 +52,19 @@ def index():
         "service": "fraud-detection-chatbot-api",
         "transaction_source": "tidb_demo",
         "datasets": DATASETS,
+        "interface": url_for("chat_interface"),
         "endpoints": ["/chat", "/transactions/<dataset>/<transaction_id>"],
         "example": {"message": LOOKUP_EXAMPLE},
     })
+
+
+@app.get("/chat")
+def chat_interface():
+    response = make_response(render_template("chat.html", datasets=DATASETS))
+    response.headers["Content-Security-Policy"] = (
+        "default-src 'self'; base-uri 'none'; object-src 'none'; frame-ancestors 'none'; form-action 'self'"
+    )
+    return response
 
 
 @app.get("/get_next_stream")
@@ -133,6 +143,9 @@ def chat():
         return jsonify({"status": "invalid_request", "reply": "Enter a text message of 1 to 2,000 characters."}), 400
 
     datasets = matching_datasets(message)
+    default_dataset = payload.get("default_dataset")
+    if not datasets and isinstance(default_dataset, str) and default_dataset in DATASETS:
+        datasets = [default_dataset]
     ids = {value.upper() if value.upper().startswith("DEMO-") else value
            for value in [*ID_PATTERN.findall(message), *EXPLICIT_ID.findall(message)]}
     if len(datasets) == 1 and len(ids) == 1:

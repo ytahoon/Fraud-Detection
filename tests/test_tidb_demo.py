@@ -166,6 +166,36 @@ class TiDBChatbotTest(unittest.TestCase):
         cls.api = chatbot_api
         cls.client = chatbot_api.app.test_client()
 
+    def test_browser_interface_serves_without_loading_tidb(self):
+        with patch.object(self.api, "tidb_demo_engine") as engine:
+            response = self.client.get("/chat")
+        engine.assert_not_called()
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.content_type.startswith("text/html"))
+        self.assertIn(b"Transaction assistant", response.data)
+        self.assertIn(b'value="ieee_cis"', response.data)
+        self.assertIn(b'value="synthetic_financial"', response.data)
+        self.assertEqual(self.client.get("/").get_json()["interface"], "/chat")
+        for name in ("chat.css", "chat.js", "chat-icons.svg"):
+            with self.subTest(asset=name), self.client.get(f"/static/{name}") as asset:
+                self.assertEqual(asset.status_code, 200)
+
+    def test_selected_chat_dataset_is_a_default_not_an_override(self):
+        with patch.object(self.api, "transaction_lookup", return_value={"status": "checked"}) as lookup:
+            payload = {"message": "demo-001", "default_dataset": "synthetic_financial"}
+            self.assertEqual(self.client.post("/chat", json=payload).status_code, 200)
+            lookup.assert_called_once_with("synthetic_financial", "DEMO-001")
+            lookup.reset_mock()
+            payload["message"] = "Check DEMO-001 in IEEE-CIS"
+            self.assertEqual(self.client.post("/chat", json=payload).status_code, 200)
+            lookup.assert_called_once_with("ieee_cis", "DEMO-001")
+            lookup.reset_mock()
+            payload["message"] = "Check DEMO-001 in IEEE-CIS and PaySim"
+            self.assertEqual(self.client.post("/chat", json=payload).status_code, 400)
+            payload.update(message="DEMO-001", default_dataset="unknown")
+            self.assertEqual(self.client.post("/chat", json=payload).status_code, 400)
+            lookup.assert_not_called()
+
     def test_demo_lookup_returns_unscored_without_a_fallback(self):
         row = {
             "dataset": "ieee_cis", "transaction_id": "DEMO-001", "amount": Decimal("85.99"),
